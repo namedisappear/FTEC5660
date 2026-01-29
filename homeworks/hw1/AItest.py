@@ -21,15 +21,15 @@ def process_image(image_path, max_size=512):
 
 #输出格式
 class receipt(BaseModel):
-    commodity: dict[str,list] = Field(description="商品名称:[数量，价格,编号....]")
+    commodity: dict[str,list] = Field(description="商品名称:[数量,单价,编号....]")
     summary: dict[str,float] = Field(description="除去商品本身的统计信息，例如总价，折扣，支付金额等")
-    
+    other:str = Field(description="其他信息，例如购买时间，购买地点等")
     
 
 if __name__ == '__main__':
-    folder = r"H:\desk\python\ai_agent\HWagent\pictures" + "\\"
+    folder = os.path.join(os.path.dirname(__file__), "pictures")
     picture_name = "1.jpg"
-    picture_path = folder + picture_name
+    picture_path = os.path.join(folder, picture_name)
     image_base64 = process_image(picture_path)
 
     llm = ChatGoogleGenerativeAI(
@@ -70,7 +70,7 @@ if __name__ == '__main__':
     chain = prompt_template | llm | StrOutputParser()
 
     # 模拟用户提问
-    user_question = "帮我算一下这单总共花了多少钱？最贵的东西是什么？"
+    user_question = "How much would I have had to pay without the discount?Show the calculation process"
     print(f"\n用户提问: {user_question}")
     
     answer = chain.invoke({"receipt_data": str(result), "question": user_question})
