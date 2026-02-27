@@ -1,0 +1,269 @@
+search_facebook_users
+Search for Facebook users by display name (supports partial and fuzzy matching).
+
+Args:
+    q: Search query string (case-insensitive, matches any part of display name)
+       Examples: "John", "john smith", "Smith"
+    limit: Maximum number of results to return (default: 20, max: 20)
+    fuzzy: Enable fuzzy matching if exact search returns no results (default: True)
+
+Returns:
+    List of user dictionaries, each containing:
+    - id (int): Unique Facebook user ID for use with get_facebook_profile()
+    - display_name (str): User's Facebook display name (may differ from legal name)
+    - city (str): Current city of residence
+    - country (str): Country of residence
+    - match_type (str): "exact" or "fuzzy" (indicates search method used)
+
+    Returns empty list [] if no matches found.
+
+Example:
+    search_facebook_users("Alex Chan", limit=5)
+    → [{"id": 123, "display_name": "Alex Chan", "city": "Hong Kong", "country": "Hong Kong", "match_type": "exact"}]
+
+    search_facebook_users("Alx Chn", limit=5)  # Typo - uses fuzzy matching
+    → [{"id": 123, "display_name": "Alex Chan", "city": "Hong Kong", "country": "Hong Kong", "match_type": "fuzzy"}]
+
+Use case:
+    First step in CV verification - find candidate's Facebook profile to cross-check
+    personal information, location, and social connections. Handles typos and variations.
+{'q': {'type': 'string'}, 'limit': {'default': 20, 'type': 'integer'}, 'fuzzy': {'default': True, 'type': 'boolean'}}        
+
+
+------------------------------------------------------
+
+
+get_facebook_profile
+Retrieve complete Facebook profile including personal info, bio, relationships, and activity.
+
+Args:
+    user_id: Facebook user ID obtained from search_facebook_users()
+
+Returns:
+    Dictionary containing:
+    - id (int): Facebook user ID
+    - display_name (str): Public display name (may be nickname)
+    - original_name (str): Original/legal name from LinkedIn
+    - city (str): Current city
+    - country (str): Current country
+    - hometown (str|None): City/region where user grew up
+    - bio (str): Personal biography/interests
+    - status (str|None): Relationship status (Single, Married, etc.)
+    - education (str|None): Highest education level
+    - current_job (str|None): Current job title
+    - current_company (str|None): Current employer
+    - interests (str): Comma-separated hobbies/interests
+    - friends (List[int]): List of friend user IDs
+    - posts (List[dict]): Recent posts with id and content
+
+    Returns {"error": "User not found"} if user_id is invalid.
+
+Example:
+    get_facebook_profile(123)
+    → {
+        "id": 123,
+        "display_name": "Sam Chan",
+        "original_name": "Alex Chan",
+        "city": "Hong Kong",
+        "hometown": "Kowloon",
+        "bio": "Software professional | Photography enthusiast",
+        "status": "Married",
+        "current_job": "Senior Engineer",
+        "current_company": "Google",
+        "friends": [124, 125, 126],
+        "posts": [{"id": 1, "content": "Excited to announce..."}]
+    }
+
+Use case:
+    Verify candidate's personal details, check for name discrepancies,
+    validate current employment, and assess social connections.
+{'user_id': {'type': 'integer'}}
+
+
+------------------------------------------------------
+
+
+get_facebook_mutual_friends
+Find mutual friends between two Facebook users (useful for verifying social connections).
+
+Args:
+    user_id_1: First Facebook user ID
+    user_id_2: Second Facebook user ID
+
+Returns:
+    Dictionary containing:
+    - user_1_id (int): First user's ID
+    - user_2_id (int): Second user's ID
+    - mutual_friends (List[int]): List of shared friend IDs
+    - mutual_count (int): Number of mutual friends
+
+    Returns {"error": "..."} if either user not found.
+
+Example:
+    get_facebook_mutual_friends(123, 456)
+    → {"user_1_id": 123, "user_2_id": 456, "mutual_friends": [789, 790], "mutual_count": 2}
+
+Use case:
+    Verify professional or personal relationships claimed in CV/references.
+{'user_id_1': {'type': 'integer'}, 'user_id_2': {'type': 'integer'}}
+
+
+------------------------------------------------------
+
+
+search_linkedin_people
+Search LinkedIn profiles by name, headline, skills, or keywords with optional filters.
+
+Args:
+    q: Search query (matches name, headline, summary, or skill names)
+       Examples: "software engineer", "Python", "data scientist", "Alex Chan"
+    location: Filter by location (optional, case-insensitive, matches city OR country)
+              Examples: "Hong Kong", "Singapore", "China", "USA", "New York"
+    industry: Filter by industry (optional, case-insensitive)
+              Examples: "Software", "Finance", "AI", "Consulting"
+    limit: Maximum results to return (default: 20, max: 20)
+    fuzzy: Enable fuzzy matching if exact search returns no results (default: True)
+
+Returns:
+    List of profile dictionaries, each containing:
+    - id (int): LinkedIn profile ID for use with get_linkedin_profile()
+    - name (str): Full name
+    - headline (str): Professional headline/title
+    - industry (str): Industry sector
+    - location (str): "City, Country" format
+    - years_experience (int): Total years of work experience
+    - match_type (str): "exact" or "fuzzy"
+
+    Returns empty list [] if no matches found.
+
+Example:
+    search_linkedin_people("Python developer", location="Hong Kong", limit=5)
+    → [{"id": 456, "name": "Alex Chan", "headline": "Senior Python Developer",
+        "industry": "Software", "location": "Hong Kong, Hong Kong", "years_experience": 8, "match_type": "exact"}]
+
+    search_linkedin_people("Pythn develper", location="Hong Kong", limit=5)  # Typo
+    → [{"id": 456, "name": "Alex Chan", "headline": "Senior Python Developer",
+        "industry": "Software", "location": "Hong Kong, Hong Kong", "years_experience": 8, "match_type": "fuzzy"}]
+
+Use case:
+    Find candidate's LinkedIn profile using name, skills, or job title from CV.
+    Use location filter to narrow down results when common names exist. Handles typos.
+{'q': {'type': 'string'}, 'location': {'anyOf': [{'type': 'string'}, {'type': 'null'}], 'default': None}, 'industry': {'anyOf': [{'type': 'string'}, {'type': 'null'}], 'default': None}, 'limit': {'default': 20, 'type': 'integer'}, 'fuzzy': {'default': True, 'type': 'boolean'}}
+
+
+------------------------------------------------------
+
+
+get_linkedin_profile
+Retrieve complete LinkedIn professional profile including work history, education, and skills.
+
+Args:
+    person_id: LinkedIn profile ID obtained from search_linkedin_people()
+
+Returns:
+    Dictionary containing:
+    - id (int): LinkedIn profile ID
+    - name (str): Full name
+    - headline (str): Professional headline
+    - city (str): Current city
+    - country (str): Current country
+    - industry (str): Primary industry
+    - status (str): Employment status (employed, open_to_work, hiring, student)
+    - years_experience (int): Total years of professional experience
+    - summary (str): Professional summary/bio
+
+    - skills (List[dict]): Each containing:
+        * name (str): Skill name (e.g., "Python", "Machine Learning")
+        * proficiency (int): Skill level 1-5 (1=beginner, 5=expert)
+
+    - experience (List[dict]): Work history, each containing:
+        * company (str): Employer name
+        * title (str): Job title
+        * seniority (str): Level (junior, mid, senior)
+        * start_year (int): Employment start year
+        * end_year (int|None): Employment end year (None if current)
+        * is_current (bool): Whether currently employed here
+
+    - education (List[dict]): Academic history, each containing:
+        * school (str): Institution name
+        * degree (str): Degree type (BSc, MSc, MBA, PhD)
+        * field (str): Field of study
+        * start_year (int): Start year
+        * end_year (int): Graduation year
+
+    Returns {"error": "Profile not found"} if person_id is invalid.
+
+Example:
+    get_linkedin_profile(456)
+    → {
+        "id": 456,
+        "name": "Alex Chan",
+        "headline": "Senior Software Engineer",
+        "years_experience": 8,
+        "skills": [
+            {"name": "Python", "proficiency": 5},
+            {"name": "Docker", "proficiency": 4}
+        ],
+        "experience": [
+            {
+                "company": "Google",
+                "title": "Senior Engineer",
+                "seniority": "senior",
+                "start_year": 2020,
+                "end_year": None,
+                "is_current": True
+            }
+        ],
+        "education": [
+            {
+                "school": "HKUST",
+                "degree": "BSc",
+                "field": "Computer Science",
+                "start_year": 2010,
+                "end_year": 2014
+            }
+        ]
+    }
+
+Use case:
+    Primary tool for CV verification - compare claimed experience, education,
+    skills, and employment dates against LinkedIn ground truth.
+{'person_id': {'type': 'integer'}}
+
+
+------------------------------------------------------
+
+
+get_linkedin_interactions
+Retrieve LinkedIn engagement data showing who has interacted with a person's content.
+
+Args:
+    person_id: LinkedIn profile ID
+
+Returns:
+    Dictionary containing:
+    - profile_id (int): The person's LinkedIn ID
+    - post_count (int): Number of posts made
+    - total_likes (int): Total likes received across all posts
+    - liked_by (List[int]): Unique profile IDs who have liked this person's posts
+    - engagement_score (float): Likes per post ratio
+
+    Returns {"profile_id": X, "liked_by": [], ...} if person has no posts.
+
+Example:
+    get_linkedin_interactions(456)
+    → {
+        "profile_id": 456,
+        "post_count": 10,
+        "total_likes": 150,
+        "liked_by": [123, 124, 125],
+        "engagement_score": 15.0
+    }
+
+Use case:
+    Assess professional network strength and content engagement.
+    Verify connections to claimed colleagues or industry peers.
+{'person_id': {'type': 'integer'}}
+
+
+------------------------------------------------------
